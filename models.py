@@ -24,9 +24,6 @@ def make_model(embed, n_categories, latent_dim=16, embedding_dim=512):
 
     x_out = layers.Dense(n_categories, activation='softmax')(x)
 
-    #print("x_out=",x_out)
-    #x_out= Tensor("dense_1/Identity:0", shape=(None, 2), dtype=float32)
-
     return keras.Model(inputs=text_in, outputs=x_out, name="AbstractClassifier")
 
 #####################################
@@ -87,8 +84,6 @@ class dressed_quantum_circuit(layers.Layer):
         q_depth = q_weights.shape[0]
         n_qubits = q_weights.shape[1]
 
-        #print("n_qubits={}, q_depth={}".format(n_qubits, q_depth))
-
         # Start from state |+> , unbiased w.r.t. |0> and |1>
         H_layer(n_qubits)
 
@@ -103,8 +98,7 @@ class dressed_quantum_circuit(layers.Layer):
         # Expectation values in the Z basis
         exp_vals = [qml.expval(qml.PauliZ(position)) for position in range(n_qubits)]
         return exp_vals
-        #return tf.convert_to_tensor(exp_vals, dtype=tf.float32)
-
+ 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def call(self, x):
@@ -156,7 +150,6 @@ def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6, embedding_dim
             q_depth=q_depth, 
             dynamic=True)(x)
     print("q shape ", q.shape)
-    #x_out = layers.Dense(n_categories, activation="softmax")(x)
 
     x_out = layers.Activation("softmax")(q)
 
