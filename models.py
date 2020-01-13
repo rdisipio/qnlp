@@ -121,23 +121,16 @@ class dressed_quantum_circuit(layers.Layer):
         q_out = []
         for q_in in x.numpy(): 
             q = qml.QNode(self.variational_quantum_circuit(q_in), self.dev).to_tf()
-            #print("qnode shape:", q.shape)
-            #q = q.to_tf()
-            q = tf.dtypes.cast(q, tf.float32)
-            q = tf.expand_dims(q, 0)
+
+            q = tf.convert_to_tensor(q_in, dtype=tf.float32)
+            q = tf.expand_dims(q, 0) #(1,4)
             q_out.append(q)
-        print(q_out)
-        q_out = tf.convert_to_tensor(q_out, dtype=tf.float32)
-            
-        #assert q_out.shape[1] == self.n_qubits
 
-        #x = layers.Flatten(x)
+        q_out = tf.concat(q_out, axis=0)
 
-        x_out = layers.Dense(self.output_dim)(x)
+        q_out = layers.Dense(self.output_dim)(q_out)
 
-        print("dressed_quantum_circuit: x_out shape:", x_out.shape)
-
-        return x_out
+        return q_out
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -157,16 +150,14 @@ def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6, embedding_dim
 
     x = layers.Lambda(UniversalEmbedding, output_shape=(embedding_dim,), name="USE_embedding")(text_in)
 
-    x = dressed_quantum_circuit(
+    q = dressed_quantum_circuit(
             output_dim=n_categories, 
             n_qubits=n_qubits, 
             q_depth=q_depth, 
             dynamic=True)(x)
-
+    print("q shape ", q.shape)
     #x_out = layers.Dense(n_categories, activation="softmax")(x)
-    print("x=",x)
-    x_out = layers.Activation("softmax")(x)
 
-    print("x_out=",x_out)
+    x_out = layers.Activation("softmax")(q)
 
     return keras.Model(inputs=text_in, outputs=x_out, name="AbstractClassifier")

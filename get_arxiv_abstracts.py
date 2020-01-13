@@ -11,10 +11,7 @@ import feedparser
 import time
 from tqdm import tqdm
 
-from utils import clean_text, normalize_text_nltk
 import tensorflow_hub as hub
-
-#from joblib import Parallel, delayed, parallel_backend
 
 categories = ['astro-ph', 'cs.AI' ]
 map_categories = { i:c for c,i in enumerate(categories) }
