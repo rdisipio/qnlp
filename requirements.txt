@@ -1,0 +1,13 @@
+pandas
+numpy
+sklearn
+tensorflow==2.0
+tensorflow_hub
+pennylane
+strawberryfields
+matplotlib
+feedparser
+bs4
+nltk
+spacy
+
