@@ -101,6 +101,22 @@ class dressed_quantum_circuit(layers.Layer):
  
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    #@tf.function
+    def run_quantum_circuit(self, x):
+        q_out = []
+
+        # Apply the quantum circuit to each element of the batch 
+        for q_in in x.numpy(): 
+            q = qml.QNode(self.variational_quantum_circuit(q_in), self.dev).to_tf()
+            q = tf.convert_to_tensor(q_in, dtype=tf.float32) #(4,)
+            q = tf.expand_dims(q, 0) #(1,4)
+            q_out.append(q)
+
+        q_out = tf.concat(q_out, axis=0) #(128,4)
+
+        return q_out
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def call(self, x):
 
         x = layers.Dense(self.n_qubits, activation='tanh')(x)
@@ -111,16 +127,7 @@ class dressed_quantum_circuit(layers.Layer):
         #print("After scaling:", x.shape)
         assert x.shape[1] == self.n_qubits
 
-        # Apply the quantum circuit to each element of the batch 
-        q_out = []
-        for q_in in x.numpy(): 
-            q = qml.QNode(self.variational_quantum_circuit(q_in), self.dev).to_tf()
-
-            q = tf.convert_to_tensor(q_in, dtype=tf.float32)
-            q = tf.expand_dims(q, 0) #(1,4)
-            q_out.append(q)
-
-        q_out = tf.concat(q_out, axis=0)
+        q_out = self.run_quantum_circuit(x)
 
         q_out = layers.Dense(self.output_dim)(q_out)
 

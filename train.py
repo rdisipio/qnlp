@@ -59,14 +59,16 @@ if __name__ == '__main__':
 
     print("Training...")
 
-    callback = EarlyStopping(monitor='val_loss', patience=3, min_delta=0.005)
+    early_stopping_callback = EarlyStopping(monitor='val_loss', patience=3, min_delta=0.005)
+    tensorboard_callback = keras.callbacks.TensorBoard(log_dir="./logs")
+    callbacks = []
 
     model.fit(
         X_txt_train, y_train,
         epochs=N_EPOCHS, 
         batch_size=BATCH_SIZE,
         validation_split=0.2,
-        callbacks=[],
+        callbacks=callbacks,
     )
     print("Done training")
 
