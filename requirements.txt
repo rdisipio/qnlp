@@ -1,7 +1,7 @@
 pandas
 numpy
 sklearn
-tensorflow==2.0
+tensorflow
 tensorflow_hub
 pennylane
 strawberryfields

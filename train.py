@@ -44,7 +44,7 @@ if __name__ == '__main__':
     module_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
     embed = hub.load(module_url)
 
-    #model = make_model(embed, n_categories=n_categories, latent_dim=LATENT_DIM)
+    # model = make_model(embed, n_categories=n_categories, latent_dim=LATENT_DIM)
     model = make_model_quantum(embed, n_categories=n_categories)
 
     model.summary()
@@ -57,6 +57,9 @@ if __name__ == '__main__':
         metrics=['acc'],
     )
 
+    # print("Trainable variables:")
+    # print(model.trainable_variables)
+    
     print("Training...")
 
     early_stopping_callback = EarlyStopping(monitor='val_loss', patience=3, min_delta=0.005)

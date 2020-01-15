@@ -6,6 +6,8 @@ from tensorflow.keras import layers
 
 import pennylane as qml
 
+# from models_quantum import VQC
+
 from functools import partial
 
 import numpy as np
@@ -14,7 +16,7 @@ def USELayer(embed,x):
     return embed(tf.squeeze(tf.cast(x, tf.string)))
 
 def make_model(embed, n_categories, latent_dim=16, embedding_dim=512):
-    UniversalEmbedding = partial(USELayer,embed)
+    UniversalEmbedding = partial(USELayer, embed)
 
     text_in = keras.Input( shape=(1,), dtype=tf.string, name="text_in")
 
@@ -24,7 +26,7 @@ def make_model(embed, n_categories, latent_dim=16, embedding_dim=512):
 
     x_out = layers.Dense(n_categories, activation='softmax')(x)
 
-    return keras.Model(inputs=text_in, outputs=x_out, name="AbstractClassifier")
+    return keras.Model(inputs=text_in, outputs=x_out, name="ClassicalPreprintClassifier")
 
 #####################################
 
@@ -57,6 +59,7 @@ def entangling_layer(n_qubits):
 class dressed_quantum_circuit(layers.Layer):
 
     def __init__(self, output_dim, n_qubits=4, q_depth=6, **kwargs):
+        super(dressed_quantum_circuit, self).__init__(**kwargs)
 
         self.output_dim = output_dim
         self.n_qubits = n_qubits
@@ -64,22 +67,44 @@ class dressed_quantum_circuit(layers.Layer):
 
         self.dev = qml.device("default.qubit", wires=self.n_qubits)
 
-        super(dressed_quantum_circuit, self).__init__(**kwargs)
+        
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def build(self, input_shape):
-        self.kernel = self.add_weight(name='kernel', 
-                                      shape=(self.q_depth, self.n_qubits),
-                                      initializer='uniform',
-                                      trainable=True)
+
+        self.W1 = self.add_weight(name='W1', 
+                                    shape=(input_shape[-1], self.n_qubits),
+                                    initializer='uniform',
+                                    trainable=True)
+
+        self.b1 = self.add_weight(name='b1',
+                                    shape=(self.n_qubits,),
+                                    initializer='uniform',
+                                    trainable=True)
+        
+        self.q_weights = self.add_weight(name='q_weights',
+                                    shape=(self.q_depth, self.n_qubits),
+                                    initializer='uniform',
+                                    trainable=True)
+        
+        self.W2 = self.add_weight(name='W2', 
+                                    shape=(self.n_qubits, self.output_dim),
+                                    initializer='uniform',
+                                    trainable=True)
+
+        self.b2 = self.add_weight(name='b2',
+                                    shape=(self.output_dim,),
+                                    initializer='uniform',
+                                    trainable=True)
+
         super(dressed_quantum_circuit, self).build(input_shape)  # Be sure to call this at the end
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
 
     def variational_quantum_circuit(self, q_in):
 
-        q_weights = self.kernel.numpy()
+        q_weights = self.q_weights.numpy()
 
         q_depth = q_weights.shape[0]
         n_qubits = q_weights.shape[1]
@@ -117,27 +142,29 @@ class dressed_quantum_circuit(layers.Layer):
         return q_out
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def call(self, x):
 
-        x = layers.Dense(self.n_qubits, activation='tanh')(x)
+    def call(self, inputs):
+
+        x = tf.matmul(inputs, self.W1) + self.b1
+        x = tf.math.tanh(x)
+
+        assert x.shape[-1] == self.n_qubits
 
         # scale by PI/2
-        x = layers.Lambda(lambda z: z*np.pi/2.)(x) 
+        x = tf.math.scalar_mul(np.pi/2., x) 
 
-        #print("After scaling:", x.shape)
-        assert x.shape[1] == self.n_qubits
+        x = self.run_quantum_circuit(x)
 
-        q_out = self.run_quantum_circuit(x)
+        x = tf.matmul(x, self.W2) + self.b2
 
-        q_out = layers.Dense(self.output_dim)(q_out)
+        assert x.shape[-1] == self.output_dim
 
-        return q_out
+        return x
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def compute_output_shape(self, input_shape):
         output_shape = (input_shape[0], self.output_dim)
-        #print("compute_output_shape:", output_shape)
 
         return tf.TensorShape(output_shape)
 
@@ -145,19 +172,18 @@ class dressed_quantum_circuit(layers.Layer):
 
 def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6, embedding_dim=512):
     
-    UniversalEmbedding = partial(USELayer,embed)
+    UniversalEmbedding = partial(USELayer, embed)
 
     text_in = keras.Input( shape=(1,), dtype=tf.string, name="text_in")
 
     x = layers.Lambda(UniversalEmbedding, output_shape=(embedding_dim,), name="USE_embedding")(text_in)
-
-    q = dressed_quantum_circuit(
+    
+    x = dressed_quantum_circuit(
             output_dim=n_categories, 
             n_qubits=n_qubits, 
             q_depth=q_depth, 
-            dynamic=True)(x)
-    print("q shape ", q.shape)
+            dynamic=False)(x)
+    
+    x_out = layers.Activation("softmax")(x)
 
-    x_out = layers.Activation("softmax")(q)
-
-    return keras.Model(inputs=text_in, outputs=x_out, name="AbstractClassifier")
+    return keras.Model(inputs=text_in, outputs=x_out, name="QuantumPreprintClassifier")

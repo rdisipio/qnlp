@@ -46,10 +46,10 @@ for category in categories:
         
         for entry in feed.entries:
             abstract = entry.summary
-            clean_abstract = clean_text(abstract)
+            #clean_abstract = clean_text(abstract)
             #clean_abstract = normalize_text_nltk(clean_abstract)
             article = {
-                'abstract':clean_abstract,
+                'abstract':abstract,
                 'category_txt':category,
                 'category_id':c_id,
             }
