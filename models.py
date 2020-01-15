@@ -59,20 +59,18 @@ def entangling_layer(n_qubits):
 class dressed_quantum_circuit(layers.Layer):
 
     def __init__(self, output_dim, n_qubits=4, q_depth=6, **kwargs):
-        super(dressed_quantum_circuit, self).__init__(**kwargs)
+        super(dressed_quantum_circuit, self).__init__(dynamic=True, **kwargs)
 
         self.output_dim = output_dim
         self.n_qubits = n_qubits
         self.q_depth = q_depth
-
         self.dev = qml.device("default.qubit", wires=self.n_qubits)
-
-        
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def build(self, input_shape):
-
+        print("Input shape:", input_shape)
+        
         self.W1 = self.add_weight(name='W1', 
                                     shape=(input_shape[-1], self.n_qubits),
                                     initializer='uniform',
@@ -164,26 +162,28 @@ class dressed_quantum_circuit(layers.Layer):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     def compute_output_shape(self, input_shape):
-        output_shape = (input_shape[0], self.output_dim)
+        output_shape = (input_shape[-1], self.output_dim)
 
         return tf.TensorShape(output_shape)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6, embedding_dim=512):
+def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6):
     
     UniversalEmbedding = partial(USELayer, embed)
 
     text_in = keras.Input( shape=(1,), dtype=tf.string, name="text_in")
 
-    x = layers.Lambda(UniversalEmbedding, output_shape=(embedding_dim,), name="USE_embedding")(text_in)
-    
+    x = layers.Lambda(UniversalEmbedding, name="USE_embedding")(text_in)
+    print("USE:", x)
     x = dressed_quantum_circuit(
             output_dim=n_categories, 
             n_qubits=n_qubits, 
-            q_depth=q_depth, 
-            dynamic=True)(x)
+            q_depth=q_depth)(x)
     
+    assert x.shape[-1] == n_categories
+
+    #x = layers.Dense(2)(x)
     x_out = layers.Activation("softmax")(x)
 
     return keras.Model(inputs=text_in, outputs=x_out, name="QuantumPreprintClassifier")
