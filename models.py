@@ -75,7 +75,7 @@ class dressed_quantum_circuit(layers.Layer):
                                     shape=(input_shape[-1], self.n_qubits),
                                     initializer='uniform',
                                     trainable=True)
-
+        
         self.b1 = self.add_weight(name='b1',
                                     shape=(self.n_qubits,),
                                     initializer='uniform',
@@ -86,16 +86,16 @@ class dressed_quantum_circuit(layers.Layer):
                                     initializer='uniform',
                                     trainable=True)
         
-        self.W2 = self.add_weight(name='W2', 
+        self.W2 = self.add_weight(name='W2',
                                     shape=(self.n_qubits, self.output_dim),
                                     initializer='uniform',
                                     trainable=True)
-
+        
         self.b2 = self.add_weight(name='b2',
                                     shape=(self.output_dim,),
                                     initializer='uniform',
                                     trainable=True)
-
+        
         super(dressed_quantum_circuit, self).build(input_shape)  # Be sure to call this at the end
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   
@@ -146,18 +146,18 @@ class dressed_quantum_circuit(layers.Layer):
         x = tf.matmul(inputs, self.W1) + self.b1
         x = tf.math.tanh(x)
 
-        assert x.shape[-1] == self.n_qubits
+        #assert x.shape[-1] == self.n_qubits
 
         # scale by PI/2
         x = tf.math.scalar_mul(np.pi/2., x) 
 
-        x = self.run_quantum_circuit(x)
+        q = self.run_quantum_circuit(x)
 
-        x = tf.matmul(x, self.W2) + self.b2
+        z = tf.matmul(q, self.W2) + self.b2
 
-        assert x.shape[-1] == self.output_dim
+        #assert z.shape[-1] == self.output_dim
 
-        return x
+        return z
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
