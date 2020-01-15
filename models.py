@@ -182,7 +182,7 @@ def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6, embedding_dim
             output_dim=n_categories, 
             n_qubits=n_qubits, 
             q_depth=q_depth, 
-            dynamic=False)(x)
+            dynamic=True)(x)
     
     x_out = layers.Activation("softmax")(x)
 
