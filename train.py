@@ -15,6 +15,15 @@ from tensorflow.keras.callbacks import EarlyStopping
 #tf.compat.v1.enable_eager_execution()
 tf.keras.backend.set_floatx('float64') 
 
+# initialize USE embedder
+module_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
+embed = hub.load(module_url)
+
+def embed_text(X_txt):
+    print("Embedding input text...")
+    X = embed(X_txt)
+    return X
+
 #########################################
 
 if __name__ == '__main__':
@@ -32,22 +41,24 @@ if __name__ == '__main__':
     n_categories = len(categories)
     print("There are {} known categories: {}".format(n_categories, categories))
 
-    X_txt = df['abstract'].values
+    X_txt = [x for x in df['abstract'].values]
+    X = np.array([np.array(x) for x in embed_text(X_txt)])
+    embedding_dim = X.shape[-1]
+    print("Embeddings shape: {}".format(X.shape))
 
     y = np.array(df['category_id'].values)
     y = to_categorical(y)
 
-    X_txt_train, X_txt_test, y_train, y_test = train_test_split(X_txt, y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-    print("Training set has {} samples".format(X_txt_train.shape[0]))
-    print("Testing set has {} samples".format(X_txt_test.shape[0]))
-
-    # initialize USE embedder
-    module_url = "https://tfhub.dev/google/universal-sentence-encoder/4"
-    embed = hub.load(module_url)
+    print("Training set has {} samples".format(X_train.shape[0]))
+    print("Testing set has {} samples".format(X_test.shape[0]))
 
     # model = make_model(embed, n_categories=n_categories, latent_dim=LATENT_DIM)
-    model = make_model_quantum(embed, n_categories=n_categories)
+    model = make_model_quantum(n_categories=n_categories, 
+                                n_qubits=4, 
+                                n_layers=2, 
+                                embedding_dim=embedding_dim)
 
     model.summary()
 
@@ -66,10 +77,10 @@ if __name__ == '__main__':
 
     early_stopping_callback = EarlyStopping(monitor='val_loss', patience=3, min_delta=0.005)
     tensorboard_callback = keras.callbacks.TensorBoard(log_dir="./logs")
-    callbacks = []
+    callbacks = [early_stopping_callback]
 
     model.fit(
-        X_txt_train, y_train,
+        X_train, y_train,
         epochs=N_EPOCHS, 
         batch_size=BATCH_SIZE,
         validation_split=0.2,
@@ -78,5 +89,5 @@ if __name__ == '__main__':
     print("Done training")
 
     print("Testing...")
-    test_score = model.evaluate(X_txt_test, y_test, verbose=2)
+    test_score = model.evaluate(X_test, y_test, verbose=2)
 

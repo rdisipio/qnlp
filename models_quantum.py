@@ -73,14 +73,17 @@ class VariationalQuantumCircuit(layers.Layer):
         return dict(list(base_config.items()) + list(config.items()))
 
 
-def make_model_quantum(embed, n_categories, n_qubits=4, n_layers=2):
+def make_model_quantum(n_categories, n_qubits=4, n_layers=2, embedding_dim=512):
     
+    '''
     UniversalEmbedding = partial(USELayer, embed)
-
     text_in = keras.Input( shape=(1,), dtype=tf.string, name="text_in")
-
     x = layers.Lambda(UniversalEmbedding, name="USE_embedding", dtype=tf.float64)(text_in)
-    x = layers.Dense(n_qubits, activation='tanh', dtype=tf.float64)(x)
+    '''
+
+    text_in = keras.Input( shape=(embedding_dim,), dtype=tf.float64, name='text_in')
+
+    x = layers.Dense(n_qubits, activation='tanh', dtype=tf.float64)(text_in)
 
     x = VariationalQuantumCircuit(
             n_categories=n_categories, 
