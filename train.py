@@ -6,12 +6,14 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 
-from models import *
+from models_quantum import *
 
 import tensorflow as tf
+import tensorflow_hub as hub
 from tensorflow.keras.callbacks import EarlyStopping
 
 #tf.compat.v1.enable_eager_execution()
+tf.keras.backend.set_floatx('float64') 
 
 #########################################
 

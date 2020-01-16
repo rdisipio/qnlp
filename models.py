@@ -168,7 +168,7 @@ class dressed_quantum_circuit(layers.Layer):
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def make_model_quantum(embed, n_categories, n_qubits=4, q_depth=6):
+def make_model_quantum_V1(embed, n_categories, n_qubits=4, q_depth=6):
     
     UniversalEmbedding = partial(USELayer, embed)
 
