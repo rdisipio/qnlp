@@ -48,6 +48,9 @@ def train_cbow(cbow, data, unique_vocab, word_to_idx, n_epochs=20):
     
     print("Starting model training...")
     
+    history = {
+        'loss': []
+    }
     for iepoch in range(n_epochs):
         total_loss = 0
         for context, target in data:            
@@ -61,10 +64,10 @@ def train_cbow(cbow, data, unique_vocab, word_to_idx, n_epochs=20):
             optimizer.step()
             total_loss += loss.data
         
-        if iepoch % n_epochs == 0:
-            loss_avg = float(total_loss / len(data))
-            print("{}/{} loss {:.2f}".format(iepoch, n_epochs, loss_avg))
-    return cbow
+        loss_avg = float(total_loss / len(data))
+        print("{}/{} loss {:.2f}".format(iepoch, n_epochs, loss_avg))
+        history['loss'].append(loss_avg)
+    return history
 
 
 def test_cbow(cbow, unique_vocab, word_to_idx):
@@ -113,7 +116,7 @@ def main(context_size, embed_dim, n_epochs=20):
     print(f"Test set size: {len(test_data)}")
     # define and train model
     cbow = CBOW(vocab_size, embed_dim, context_size)
-    train_cbow(cbow, train_data, unique_vocab, word_to_idx, n_epochs)
+    history = train_cbow(cbow, train_data, unique_vocab, word_to_idx, n_epochs)
     
     # get two words similarity
     test_cbow(cbow, unique_vocab, word_to_idx)
